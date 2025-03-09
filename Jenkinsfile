@@ -2,27 +2,29 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'DOMAINS', defaultValue: 'example.com,test.org,sub.domain.net', description: 'Comma-separated list of domains to check')
+        text(name: 'DOMAINS', description: 'Enter domains, one per line.\nExample values:\nexample.com\ntest.org\nsub.domain.net', defaultValue: '')
     }
 
     stages {
         stage('DNS Check') {
             steps {
                 script {
-                    def domains = params.DOMAINS.split(',')
+                    def domains = params.DOMAINS.readLines()
                     for (domain in domains) {
                         domain = domain.trim()
-                        echo "Checking DNS for ${domain}"
-                        sh """
-                        #!/bin/bash
-                        dig ${domain} A +short
-                        if [ \$? -eq 0 ]; then
-                          echo "A record found for ${domain}"
-                        else
-                          echo "A record not found for ${domain}"
-                          exit 1
-                        fi
-                        """
+                        if (domain) {
+                            echo "Checking DNS for ${domain}"
+                            sh """
+                            #!/bin/bash
+                            host ${domain}
+                            if [ \$? -eq 0 ]; then
+                              echo "DNS lookup successful for ${domain}"
+                            else
+                              echo "DNS lookup failed for ${domain}"
+                              exit 1
+                            fi
+                            """
+                        }
                     }
                 }
             }
