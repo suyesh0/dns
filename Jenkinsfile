@@ -3,11 +3,11 @@ pipeline {
 
     parameters {
         extendedChoice(
-            name: 'Domains',
+            name: 'DNS_CONFIG',
             type: 'PT_MULTI_LINE_TEXT',
-            value: '{\n  "domains": [\n    "example.com",\n    "test.org",\n    "sub.domain.net"\n  ],\n  "other_config": "value"\n}',
-            description: 'Enter domain data',
-            multiSelectDelimiter: ','
+            value: 'domains=example.com,test.org,sub.domain.net\ncheckMX=true\ntimeout=5',
+            description: 'Enter DNS configuration (domains, checkMX, timeout)',
+            multiSelectDelimiter: ',' // Required, but not used
         )
     }
 
@@ -15,15 +15,27 @@ pipeline {
         stage('DNS Check') {
             steps {
                 script {
-                    def jsonData = readJSON text: params.Domains
-                    for (domain in jsonData.domains) {
-                        echo "Checking DNS for ${domain}"
-                        sh """
-                        #!/bin/bash
-                        python dns_checker.py ${domain}
-                        """
+                    def config = [:]
+                    params.DNS_CONFIG.readLines().each { line ->
+                        def parts = line.split('=')
+                        if (parts.size() == 2) {
+                            config[parts[0].trim()] = parts[1].trim()
+                        }
                     }
-                    echo "Other Config: ${jsonData.other_config}"
+
+                    def domains = config.domains.split(',')
+                    def checkMX = config.checkMX.toBoolean()
+                    def timeout = config.timeout.toInteger()
+
+                    for (domain in domains) {
+                        domain = domain.trim()
+                        if (domain) {
+                            sh """
+                            #!/bin/bash
+                            python dns_checker.py '${domain}' '${checkMX}' '${timeout}'
+                            """
+                        }
+                    }
                 }
             }
         }
