@@ -2,9 +2,13 @@ pipeline {
     agent any
 
     parameters {
-        text(name: 'DOMAINS', description: 'Enter domains, one per line.\nExample values:\nexample.com\ntest.org\nsub.domain.net', defaultValue: '')
+        extendedChoice(
+            name: 'Domains',
+            type: 'PT_MULTI_LINE_TEXT', // Use PT_MULTI_LINE_TEXT for a large text area
+            value: '{\n  "domains": [\n    "example.com",\n    "test.org",\n    "sub.domain.net"\n  ],\n  "other_config": "value"\n}',
+            description: 'Enter domain data',
+        )
     }
-
     stages {
         stage('DNS Check') {
             steps {
