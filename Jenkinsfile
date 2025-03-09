@@ -4,32 +4,26 @@ pipeline {
     parameters {
         extendedChoice(
             name: 'Domains',
-            type: 'PT_MULTI_LINE_TEXT', // Use PT_MULTI_LINE_TEXT for a large text area
+            type: 'PT_MULTI_LINE_TEXT',
             value: '{\n  "domains": [\n    "example.com",\n    "test.org",\n    "sub.domain.net"\n  ],\n  "other_config": "value"\n}',
             description: 'Enter domain data',
+            multiSelectDelimiter: ','
         )
     }
+
     stages {
         stage('DNS Check') {
             steps {
                 script {
-                    def domains = params.DOMAINS.readLines()
-                    for (domain in domains) {
-                        domain = domain.trim()
-                        if (domain) {
-                            echo "Checking DNS for ${domain}"
-                            sh """
-                            #!/bin/bash
-                            host ${domain}
-                            if [ \$? -eq 0 ]; then
-                              echo "DNS lookup successful for ${domain}"
-                            else
-                              echo "DNS lookup failed for ${domain}"
-                              exit 1
-                            fi
-                            """
-                        }
+                    def jsonData = readJSON text: params.Domains
+                    for (domain in jsonData.domains) {
+                        echo "Checking DNS for ${domain}"
+                        sh """
+                        #!/bin/bash
+                        python dns_checker.py ${domain}
+                        """
                     }
+                    echo "Other Config: ${jsonData.other_config}"
                 }
             }
         }
