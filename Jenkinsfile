@@ -19,7 +19,7 @@ pipeline {
                             try {
                                 sh """
                                 #!/bin/bash
-                                python dns_checker.py '${domain}' '${params.CHECK_MX}' '${params.TIMEOUT}'
+                                python3 dns_checker.py '${domain}' '${params.CHECK_MX}' '${params.TIMEOUT}'
                                 exit_code=\$?
                                 if [ \$exit_code -ne 0 ]; then
                                     echo "Error: dns_checker.py failed for ${domain} with exit code \$exit_code"
