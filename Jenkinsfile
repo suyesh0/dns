@@ -15,10 +15,20 @@ pipeline {
                     for (domain in domains) {
                         domain = domain.trim()
                         if (domain) {
-                            sh """
-                            #!/bin/bash
-                            python dns_checker.py '${domain}' '${params.CHECK_MX}' '${params.TIMEOUT}'
-                            """
+                            echo "Checking domain: ${domain}"
+                            try {
+                                sh """
+                                #!/bin/bash
+                                python dns_checker.py '${domain}' '${params.CHECK_MX}' '${params.TIMEOUT}'
+                                exit_code=\$?
+                                if [ \$exit_code -ne 0 ]; then
+                                    echo "Error: dns_checker.py failed for ${domain} with exit code \$exit_code"
+                                    exit 1
+                                fi
+                                """
+                            } catch (Exception e) {
+                                error "An error occurred while checking ${domain}: ${e.getMessage()}"
+                            }
                         }
                     }
                 }
@@ -26,4 +36,3 @@ pipeline {
         }
     }
 }
-
