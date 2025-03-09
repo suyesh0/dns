@@ -1,27 +1,31 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Execute Python Script') {
-            steps {
-                sh 'chmod +x printing.py' // Add execute permissions
-                sh 'python3 printing.py' // Execute with python3
-            }
-        }
-
-        stage('Disk Status') {
-            steps {
-                script {
-                    def diskStatus = sh(script: 'df -h', returnStdout: true).trim()
-                    println "Disk Status:\n${diskStatus}"
-                }
-            }
-        }
+    parameters {
+        string(name: 'DOMAINS', defaultValue: 'example.com,test.org,sub.domain.net', description: 'Comma-separated list of domains to check')
     }
 
-    post {
-        always {
-            echo "Pipeline finished."
+    stages {
+        stage('DNS Check') {
+            steps {
+                script {
+                    def domains = params.DOMAINS.split(',')
+                    for (domain in domains) {
+                        domain = domain.trim()
+                        echo "Checking DNS for ${domain}"
+                        sh """
+                        #!/bin/bash
+                        dig ${domain} A +short
+                        if [ \$? -eq 0 ]; then
+                          echo "A record found for ${domain}"
+                        else
+                          echo "A record not found for ${domain}"
+                          exit 1
+                        fi
+                        """
+                    }
+                }
+            }
         }
     }
 }
