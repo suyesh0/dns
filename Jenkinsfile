@@ -4,7 +4,8 @@ pipeline {
     stages {
         stage('Execute Python Script') {
             steps {
-                sh 'printing.py' // Replace 'your_script.py' with your script's filename
+                sh 'chmod +x printing.py' // Add execute permissions
+                sh 'python3 printing.py' // Execute with python3
             }
         }
 
