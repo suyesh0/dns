@@ -2,37 +2,22 @@ pipeline {
     agent any
 
     parameters {
-        extendedChoice(
-            name: 'DNS_CONFIG',
-            type: 'PT_MULTI_LINE_TEXT',
-            value: 'domains=example.com,test.org,sub.domain.net\ncheckMX=true\ntimeout=5',
-            description: 'Enter DNS configuration (domains, checkMX, timeout)',
-            multiSelectDelimiter: ',' // Required, but not used
-        )
+        text(name: 'DOMAINS', description: 'Enter domains, one per line', defaultValue: 'example.com\ntest.org\nsub.domain.net')
+        booleanParam(name: 'CHECK_MX', description: 'Check MX records?', defaultValue: true)
+        string(name: 'TIMEOUT', description: 'DNS query timeout (seconds)', defaultValue: '5')
     }
 
     stages {
         stage('DNS Check') {
             steps {
                 script {
-                    def config = [:]
-                    params.DNS_CONFIG.readLines().each { line ->
-                        def parts = line.split('=')
-                        if (parts.size() == 2) {
-                            config[parts[0].trim()] = parts[1].trim()
-                        }
-                    }
-
-                    def domains = config.domains.split(',')
-                    def checkMX = config.checkMX.toBoolean()
-                    def timeout = config.timeout.toInteger()
-
+                    def domains = params.DOMAINS.readLines()
                     for (domain in domains) {
                         domain = domain.trim()
                         if (domain) {
                             sh """
                             #!/bin/bash
-                            python dns_checker.py '${domain}' '${checkMX}' '${timeout}'
+                            python dns_checker.py '${domain}' '${params.CHECK_MX}' '${params.TIMEOUT}'
                             """
                         }
                     }
@@ -41,3 +26,4 @@ pipeline {
         }
     }
 }
+
